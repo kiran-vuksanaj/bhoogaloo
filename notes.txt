@@ -1,0 +1,5 @@
+2021-11-06 11:25 :: kiranv
+- started github repository
+- looked a bit into websockets, fastAPI
+- i think im gonna use fastAPI and (something js?) for stuff
+- first installation step is setting up venv

@@ -1,3 +1,6 @@
+2022-06-10 13:59 :: kiranv
+- https://fastapi.tiangolo.com/advanced/websockets/
+
 2021-11-06 11:25 :: kiranv
 - started github repository
 - looked a bit into websockets, fastAPI

@@ -1,5 +1,6 @@
-from fastapi import FastAPI, WebSocket
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 app = FastAPI()
 
@@ -10,52 +11,46 @@ app = FastAPI()
 #         }
 #     return {"data":data}
 
-app = FastAPI()
+class PlayerState:
+    def __init__(self):
+        self.n = 4
+        self.connections = []
+    
+    def connect(self,websocket):
+        self.connections.append(websocket)
+        return True
+    
+    def disconnect(self,websocket):
+        self.connections.remove(websocket)
+        return True
 
-html = """
-<!DOCTYPE html>
-<html>
-    <head>
-        <title>Chat</title>
-    </head>
-    <body>
-        <h1>WebSocket Chat</h1>
-        <form action="" onsubmit="sendMessage(event)">
-            <input type="text" id="messageText" autocomplete="off"/>
-            <button>Send</button>
-        </form>
-        <ul id='messages'>
-        </ul>
-        <script>
-            var ws = new WebSocket("ws://localhost:8080/ws", "echo-protocol");
-            ws.onmessage = function(event) {
-                var messages = document.getElementById('messages')
-                var message = document.createElement('li')
-                var content = document.createTextNode(event.data)
-                message.appendChild(content)
-                messages.appendChild(message)
-            };
-            function sendMessage(event) {
-                var input = document.getElementById("messageText")
-                ws.send(input.value)
-                input.value = ''
-                event.preventDefault()
-            }
-        </script>
-    </body>
-</html>
-"""
+    async def update_state(self,n):
+        self.n = n
+        for websocket in self.connections:
+            await websocket.send_text(f'new n: {n}')
+        return True
 
+
+playerstate = PlayerState()
+
+
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 @app.get("/")
 async def get():
-    return HTMLResponse(html)
+    return FileResponse("app/static/index.html")
 
 
-@app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
+@app.websocket("/ws/controller")
+async def websocket_client(websocket: WebSocket):
     print('hi')
     await websocket.accept()
-    while True:
-        data = await websocket.receive_text()
-        await websocket.send_text(f"Message text was: {data}")
+    
+    playerstate.connect(websocket)
+
+    try:
+        while True:
+            data = await websocket.receive_text()
+            await playerstate.update_state(data)
+    except WebSocketDisconnect:
+        await playerstate.disconnect(websocket)

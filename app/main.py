@@ -22,7 +22,6 @@ class PlayerState:
     
     def disconnect(self,websocket):
         self.connections.remove(websocket)
-        return True
 
     async def update_state(self,n):
         self.n = n
